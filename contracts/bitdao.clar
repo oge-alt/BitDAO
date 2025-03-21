@@ -222,3 +222,34 @@
     )
   )
 )
+
+;; Proposal Management
+
+;; Creates a new proposal
+(define-public (create-proposal (title (string-ascii 50)) (description (string-utf8 500)) (amount uint))
+  (let (
+    (caller tx-sender)
+    (proposal-id (+ (var-get total-proposals) u1))
+  )
+    (asserts! (is-member caller) ERR-NOT-MEMBER)
+    (asserts! (>= (var-get treasury-balance) amount) ERR-INSUFFICIENT-FUNDS)
+    (asserts! (> (len title) u0) ERR-INVALID-PROPOSAL)
+    (asserts! (> (len description) u0) ERR-INVALID-PROPOSAL)
+    (map-set proposals proposal-id
+      {
+        creator: caller,
+        title: title,
+        description: description,
+        amount: amount,
+        yes-votes: u0,
+        no-votes: u0,
+        status: "active",
+        created-at: block-height,
+        expires-at: (+ block-height u1440)
+      }
+    )
+    (var-set total-proposals proposal-id)
+    (try! (update-member-reputation caller 1))
+    (ok proposal-id)
+  )
+)
