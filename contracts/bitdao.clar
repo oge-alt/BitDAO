@@ -116,3 +116,44 @@
     false
   )
 )
+
+;; Reputation Management
+(define-private (calculate-voting-power (user principal))
+  (let (
+    (member-data (unwrap! (map-get? members user) u0))
+    (reputation (get reputation member-data))
+    (stake (get stake member-data))
+  )
+    (+ (* reputation u10) stake)
+  )
+)
+
+(define-private (update-member-reputation (user principal) (change int))
+  (match (map-get? members user)
+    member-data 
+    (let (
+      (new-reputation (to-uint (+ (to-int (get reputation member-data)) change)))
+      (updated-data (merge member-data {reputation: new-reputation, last-interaction: block-height}))
+    )
+      (map-set members user updated-data)
+      (ok new-reputation)
+    )
+    ERR-NOT-MEMBER
+  )
+)
+
+;; Public Functions
+
+;; Membership Management
+
+;; Allows a principal to join the DAO
+(define-public (join-dao)
+  (let (
+    (caller tx-sender)
+  )
+    (asserts! (not (is-member caller)) ERR-ALREADY-MEMBER)
+    (map-set members caller {reputation: u1, stake: u0, last-interaction: block-height})
+    (var-set total-members (+ (var-get total-members) u1))
+    (ok true)
+  )
+)
