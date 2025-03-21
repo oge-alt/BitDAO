@@ -316,3 +316,38 @@
     )
   )
 )
+
+;; Treasury Management
+
+;; Returns current treasury balance
+(define-read-only (get-treasury-balance)
+  (ok (var-get treasury-balance))
+)
+
+;; Allows anyone to donate to the treasury
+(define-public (donate-to-treasury (amount uint))
+  (let (
+    (caller tx-sender)
+  )
+    (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+    (try! (stx-transfer? amount caller (as-contract tx-sender)))
+    (var-set treasury-balance (+ (var-get treasury-balance) amount))
+    (if (is-member caller)
+      (begin
+        (try! (update-member-reputation caller 2))
+        (ok true)
+      )
+      (ok true)
+    )
+  )
+)
+
+;; Reputation System
+
+;; Gets member's reputation
+(define-read-only (get-member-reputation (user principal))
+  (match (map-get? members user)
+    member-data (ok (get reputation member-data))
+    ERR-NOT-MEMBER
+  )
+)
