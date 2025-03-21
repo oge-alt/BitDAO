@@ -71,3 +71,48 @@
 ;; Voting Records
 ;; Tracks member votes to prevent double voting
 (define-map votes {proposal-id: uint, voter: principal} bool)
+
+;; Cross-DAO Collaboration Records
+;; Enables secure interaction between different DAOs
+(define-map collaborations uint 
+  {
+    partner-dao: principal,
+    proposal-id: uint,
+    status: (string-ascii 10)
+  }
+)
+
+;; Private Functions
+
+;; Membership Validation
+(define-private (is-member (user principal))
+  (match (map-get? members user)
+    member-data true
+    false
+  )
+)
+
+;; Proposal Validation
+(define-private (is-active-proposal (proposal-id uint))
+  (match (map-get? proposals proposal-id)
+    proposal (and 
+      (< block-height (get expires-at proposal))
+      (is-eq (get status proposal) "active")
+    )
+    false
+  )
+)
+
+(define-private (is-valid-proposal-id (proposal-id uint))
+  (match (map-get? proposals proposal-id)
+    proposal true
+    false
+  )
+)
+
+(define-private (is-valid-collaboration-id (collaboration-id uint))
+  (match (map-get? collaborations collaboration-id)
+    collaboration true
+    false
+  )
+)
