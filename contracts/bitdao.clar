@@ -351,3 +351,47 @@
     ERR-NOT-MEMBER
   )
 )
+
+;; Decays reputation of inactive members
+(define-public (decay-inactive-members)
+  (let (
+    (caller tx-sender)
+    (current-block block-height)
+  )
+    (asserts! (is-eq caller CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+    (map-set members caller
+      (match (map-get? members caller)
+        member-data 
+        (if (> (- current-block (get last-interaction member-data)) u4320)
+          (merge member-data {reputation: (/ (get reputation member-data) u2)})
+          member-data
+        )
+        { reputation: u0, stake: u0, last-interaction: current-block }
+      )
+    )
+    (ok true)
+  )
+)
+
+;; Cross-DAO Collaboration
+
+;; Proposes collaboration with another DAO
+(define-public (propose-collaboration (partner-dao principal) (proposal-id uint))
+  (let (
+    (caller tx-sender)
+    (collaboration-id (+ (var-get total-proposals) u1))
+  )
+    (asserts! (is-member caller) ERR-NOT-MEMBER)
+    (asserts! (is-active-proposal proposal-id) ERR-INVALID-PROPOSAL)
+    (asserts! (not (is-eq partner-dao caller)) ERR-INVALID-PROPOSAL)
+    (map-set collaborations collaboration-id
+      {
+        partner-dao: partner-dao,
+        proposal-id: proposal-id,
+        status: "proposed"
+      }
+    )
+    (var-set total-proposals collaboration-id)
+    (ok collaboration-id)
+  )
+)
